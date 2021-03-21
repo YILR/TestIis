@@ -1,0 +1,15 @@
+<configuration>
+
+    <property file="application.properties" />
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
+        <file>${destination}</file>
+
+        <encoder>
+            <pattern>%date %-5level %logger{50}.%M:%L - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="file" />
+    </root>
+</configuration>

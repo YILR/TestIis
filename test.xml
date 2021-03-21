@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Department>
+    <tag>
+        <DepCode>105</DepCode>
+        <DepJob>Senior</DepJob>
+        <Description>Java</Description>
+    </tag>
+    <tag>
+        <DepCode>205</DepCode>
+        <DepJob>Junior</DepJob>
+        <Description>Tester</Description>
+    </tag>
+    <tag>
+        <DepCode>305</DepCode>
+        <DepJob>Middle</DepJob>
+        <Description/>
+    </tag>
+</Department>
