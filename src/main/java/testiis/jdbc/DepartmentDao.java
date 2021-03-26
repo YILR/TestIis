@@ -7,10 +7,7 @@ import testiis.model.Department;
 
 import java.io.*;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
@@ -18,24 +15,27 @@ import java.util.Properties;
  *
  * @author Ilnur Yakhin
  */
-public class JdbcDepartment {
+public class DepartmentDao {
 
     private static final String SELECT = "SELECT * FROM department";
     private static final String INSERT = "INSERT INTO department(DepCode, DepJob, Description) VALUES(?, ?, ?)";
     private static final String UPDATE = "UPDATE department SET Description = ? WHERE DepCode = ? AND DepJob = ?";
     private static final String DELETE = "DELETE FROM department WHERE DepCode = ? AND DepJob = ?";
 
-    private static final Logger logger = LoggerFactory.getLogger(JdbcDepartment.class);
+    private static final Logger logger = LoggerFactory.getLogger(DepartmentDao.class);
 
     private String url;
+    private Savepoint savepoint;
+    private Connection connection;
 
     /**
      * A constructor that connects to the database by url
      *
      * @see #init()
      */
-    public JdbcDepartment() {
+    public DepartmentDao() {
         init();
+        connectionDao();
     }
 
     /**
@@ -68,14 +68,14 @@ public class JdbcDepartment {
      *                      or this method is called on a closed connection
      */
     public List<Department> getAll() {
-        List<Department> users = new ArrayList<>();
+        List<Department> departments = new ArrayList<>();
         try (PreparedStatement statement = getConnection().prepareStatement(SELECT)) {
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 String depCode = rs.getString(2);
                 String depJob = rs.getString(3);
                 String description = rs.getString(4);
-                users.add(new Department(depCode, depJob, description));
+                departments.add(new Department(depCode, depJob, description));
             }
             rs.close();
             logger.info("Select request");
@@ -83,93 +83,79 @@ public class JdbcDepartment {
             logger.error(e.toString());
             e.printStackTrace();
         }
-        return users;
+        return departments;
     }
+
 
     /**
      * inserting into the database
      *
-     * @param list stores POJO class
+     * @param departments stores POJO class
      * @throws SQLException if a database access error occurs
      *                      or this method is called on a closed connection
-     * @see #rollback(Connection)
      */
-    public void insertAll(List<Department> list) {
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-            try (PreparedStatement statement = connection.prepareStatement(INSERT)) {
-                for (Department department : list) {
-                    statement.setString(1, department.getDepCode());
-                    statement.setString(2, department.getDepJob());
-                    statement.setString(3, department.getDescription());
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-                connection.commit();
-                logger.info("Insert in database");
-            } catch (SQLException e) {
-                rollback(connection);
+    public void insertAll(List<Department> departments) {
+
+        try (PreparedStatement statement = connection.prepareStatement(INSERT)) {
+            for (Department department : departments) {
+                statement.setString(1, department.getDepCode());
+                statement.setString(2, department.getDepJob());
+                statement.setString(3, department.getDescription());
+                statement.addBatch();
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            statement.executeBatch();
+            logger.info("Insert in database");
+        } catch (SQLException e) {
+            rollbackDao();
         }
+
     }
 
     /**
      * updating into the database
      *
-     * @param list stores POJO class
+     * @param departments stores POJO class
      * @throws SQLException if a database access error occurs
      *                      or this method is called on a closed connection
-     * @see #rollback(Connection)
      */
-    public void updateAll(List<Department> list) {
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-            try (PreparedStatement statement = getConnection().prepareStatement(UPDATE)) {
-                for (Department department : list) {
-                    statement.setString(2, department.getDepCode());
-                    statement.setString(3, department.getDepJob());
-                    statement.setString(1, department.getDescription());
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-                connection.commit();
-                logger.info("Update in database");
-            } catch (SQLException e) {
-                rollback(connection);
+    public void updateAll(List<Department> departments) {
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE)) {
+            for (Department department : departments) {
+                statement.setString(2, department.getDepCode());
+                statement.setString(3, department.getDepJob());
+                statement.setString(1, department.getDescription());
+                statement.addBatch();
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            statement.executeBatch();
+            logger.info("Update in database");
+        } catch (SQLException e) {
+            rollbackDao();
         }
+
     }
 
     /**
      * deleting from the database
      *
-     * @param list stores POJO class
+     * @param departments stores POJO class
      * @throws SQLException if a database access error occurs
      *                      or this method is called on a closed connection
-     * @see #rollback(Connection)
      */
-    public void deleteAll(List<Department> list) {
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-            try (PreparedStatement statement = getConnection().prepareStatement(DELETE)) {
-                for (Department department : list) {
-                    statement.setString(1, department.getDepCode());
-                    statement.setString(2, department.getDepJob());
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-                connection.commit();
-                logger.info("Delete from database");
-            } catch (SQLException e) {
-                rollback(connection);
+    public void deleteAll(List<Department> departments) {
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE)) {
+            for (Department department : departments) {
+                statement.setString(1, department.getDepCode());
+                statement.setString(2, department.getDepJob());
+                statement.addBatch();
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            statement.executeBatch();
+            logger.info("Delete from database");
+        } catch (SQLException e) {
+            rollbackDao();
         }
+
     }
 
     /**
@@ -201,19 +187,61 @@ public class JdbcDepartment {
     }
 
     /**
+     * assignment connection, create savePoint
+     *
+     *  @throws SQLException if a database access error occurs
+     *                           or this method is called on a closed connection
+     */
+    private void connectionDao() {
+        try {
+            connection = getConnection();
+            connection.setAutoCommit(false);
+            savepoint = connection.setSavepoint("save");
+            logger.info("create savePoint");
+        } catch (SQLException throwables) {
+            logger.error(throwables.toString());
+            throwables.printStackTrace();
+        }
+    }
+
+    /**
      * to throw an exception, rollback to old data
      *
-     * @param connection
      * @throws SQLException if a database access error occurs
      *                      or this method is called on a closed connection
      */
-    private void rollback(Connection connection) {
+    private void rollbackDao() {
         try {
-            connection.rollback();
+            connection.rollback(savepoint);
             logger.info("rollback to old data");
         } catch (SQLException e1) {
             logger.error(e1.toString());
             e1.printStackTrace();
+        }
+    }
+
+
+    /**
+     *  Makes all changes made since the previous
+     *       commit/rollback permanent and releases any database locks
+     *       currently held by this <code>Connection</code> object.
+     *       This method should be
+     *       used only when auto-commit mode has been disabled
+     *
+     * @throws SQLException if a database access error occurs
+     *      *                      or this method is called on a closed connection
+     */
+    public void commitAndClose(){
+        try {
+            connection.commit();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }finally {
+            try {
+                connection.close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
         }
     }
 

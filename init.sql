@@ -4,7 +4,7 @@ CREATE TABLE department
 (ID int PRIMARY KEY AUTO_INCREMENT,
 DepCode varchar (20) NOT NULL,
 DepJob varchar (100) NOT NULL,
-Description varchar (255),
+Description varchar (255) NOT NULL,
 UNIQUE (DepCode, DepJob));
 
 INSERT INTO department(DepCode, DepJob, Description)

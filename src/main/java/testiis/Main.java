@@ -1,18 +1,20 @@
 package testiis;
 
-import testiis.xml.XmlReaderDepartment;
-import testiis.xml.XmlWriterDepartment;
+import testiis.xml.XmlReader;
+import testiis.xml.XmlWriter;
 
 
 public class Main {
 
     public static void main(String[] args) {
         if(args.length == 1) {
-            XmlWriterDepartment writeDepartmentXml = new XmlWriterDepartment();
-            writeDepartmentXml.createXML(args[0]);
+            XmlWriter xmlWriter = new XmlWriter();
+            xmlWriter.createXML(args[0]);
         }else if (args.length == 2){
-            XmlReaderDepartment xmlReaderDepartment = new XmlReaderDepartment();
-            xmlReaderDepartment.readXml(args[1]);
+            if(args[0].equals("sync")) {
+                XmlReader xmlReader = new XmlReader();
+                xmlReader.readXml(args[1]);
+            }
         }
     }
 }

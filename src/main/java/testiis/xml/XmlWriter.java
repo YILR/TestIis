@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import testiis.jdbc.JdbcDepartment;
+import testiis.jdbc.DepartmentDao;
 import testiis.model.Department;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -25,8 +25,8 @@ import java.util.List;
  *
  * @author Ilnur Yakhin
  */
-public class XmlWriterDepartment {
-    private static final Logger logger = LoggerFactory.getLogger(XmlWriterDepartment.class);
+public class XmlWriter {
+    private static final Logger logger = LoggerFactory.getLogger(XmlWriter.class);
 
     /**
      * creates the xml
@@ -37,8 +37,8 @@ public class XmlWriterDepartment {
      * @see #writeDocument(Document, String)
      */
     public void createXML(String file) {
-        JdbcDepartment jdbcDepartment = new JdbcDepartment();
-        List<Department> departmentList = jdbcDepartment.getAll();
+        DepartmentDao departmentDao = new DepartmentDao();
+        List<Department> departmentList = departmentDao.getAll();
         Document document = null;
         try {
             DocumentBuilderFactory dFact = DocumentBuilderFactory.newInstance();

@@ -1,4 +1,3 @@
-#!/bin/bash
 ECHO OFF
 set arg1=%1
 set arg2=%2
